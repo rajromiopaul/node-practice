@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
         refreshToken: process.env.REFRESH_TOKEN,
     },
 });
-
+ 
 // Verify the connection configuration
 transporter.verify((error, success) => {
     if (error) {

@@ -1,91 +1,78 @@
 import userModel from '../models/user.model.js'
 import jwt from 'jsonwebtoken'
-import bcrypt from 'bcryptjs'
+import emailService from '../services/email.service.js'
 
-async function registerUser(req, res) {
-    const { username, email, password, role = 'user' } = req.body
+async function userRegisterController(req, res) {
+    const { email, password, name } = req.body
 
-    const isUserAlreadyExists = await userModel.findOne({
-        $or: [
-            { username },
-            { email }
-        ]
+    const isExists = await userModel.findOne({
+        email: email
     })
 
-    if (isUserAlreadyExists) {
-        return res.status(409).json({ message: 'User already exists' })
+    if (isExists) {
+        return res.status(422).json({
+            message: "User already exists with email.",
+            status: "failed"
+        })
     }
-
-    const hash = await bcrypt.hash(password, 10)
 
     const user = await userModel.create({
-        username,
-        email,
-        password: hash,
-        role
+        email, password, name
     })
 
-    const token = jwt.sign({
-        id: user._id,
-        role: user.role
-    }, process.env.JWT_SECRET)
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie('token', token)
+    res.cookie("token", token)
 
     res.status(201).json({
-        message: 'User registered successfully',
         user: {
-            id: user._id,
-            username: user.username,
+            _id: user._id,
             email: user.email,
-            role: user.role
-        }
+            name: user.name
+        },
+        token
     })
 
+    await emailService.sendRegistrationEmail(user.email, user.name)
 }
 
-async function loginUser(req, res) {
-    const { username, email, password } = req.body
+/**
+ * - User Login Controller
+ * - POST /api/auth/login
+  */
 
-    const user = await userModel.findOne({
-        $or: [
-            { username },
-            { email }
-        ]
-    })
+async function userLoginController(req, res) {
+    const { email, password } = req.body
+
+    const user = await userModel.findOne({ email }).select("+password")
 
     if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' })
+        return res.status(401).json({
+            message: "Email or password is INVALID"
+        })
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password)
+    const isValidPassword = await user.comparePassword(password)
 
-    if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid credentials' })
+    if (!isValidPassword) {
+        return res.status(401).json({
+            message: "Email or password is INVALID"
+        })
     }
 
-    const token = jwt.sign({
-        id: user._id,
-        role: user.role
-    }, process.env.JWT_SECRET)
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "3d" })
 
-    res.cookie('token', token)
+    res.cookie("token", token)
 
     res.status(200).json({
-        message: 'User logged in successully',
         user: {
-            id: user._id,
-            username: user.username,
+            _id: user._id,
             email: user.email,
-            role: user.role
-        }
+            name: user.name
+        },
+        token
     })
 
 }
 
-async function logoutUser(req, res) {
-    res.clearCookie('token')
-    res.status(200).json({ message: 'User logged out successfully' })
-}
-
-export default { registerUser, loginUser, logoutUser }
+export default { userRegisterController , userLoginController }
