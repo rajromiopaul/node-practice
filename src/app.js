@@ -1,5 +1,6 @@
 import express from 'express'
 import cookieParser from 'cookie-parser'
+import transactionRoutes from './routes/transaction.routes.js'
 
 import authRoutes from './routes/auth.routes.js'
 import accountRoutes from './routes/account.routes.js'
@@ -10,6 +11,6 @@ app.use(cookieParser())
 
 app.use('/api/auth', authRoutes)
 app.use('/api/accounts', accountRoutes)
-
+app.use('/api/transactions', transactionRoutes)
 
 export default app

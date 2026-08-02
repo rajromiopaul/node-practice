@@ -2,13 +2,13 @@ import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema({
     fromAccount: {
-        type: mongoose.Schema.type.objectID,
+        type: mongoose.Schema.Types.ObjectID,
         ref: 'account',
         required: [true, 'Transaction must be associated with a from account'],
         index: true
     },
     toAccount: {
-        type: mongoose.Schema.type.objectID,
+        type: mongoose.Schema.Types.ObjectID,
         ref: 'account',
         required: [true, 'Transaction must be associated with a to account'],
         index: true
@@ -24,7 +24,7 @@ const transactionSchema = new mongoose.Schema({
     amount: {
         type: Number,
         required: [true, 'Amount is required for creating a transaction'],
-        min: [0, 'Transaction amount cannot be negative']
+        min: [0.01, 'Transaction amount cannot be negative']
     },
     idempotencyKey: {
         type: String,
